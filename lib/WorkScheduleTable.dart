@@ -30,78 +30,105 @@ class _WorkScheduleTableState extends State<WorkScheduleTable> {
       appBar: AppBar(
         title: const Text('Work Schedule Table'),
       ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Column(
-          children: [
-            // Header row
-            Row(
-              children: [
-                _buildCell('', isHeader: true),
-                ...List.generate(
-                  daysInMonth,
-                      (index) {
-                    final date = DateTime(2025, 1, index + 1);
-                    final dayOfWeek = DateFormat('EEEE').format(date);
-                    final isWeekend = date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-                    return _buildCell(
-                      '${index + 1}\n$dayOfWeek',
-                      isHeader: true,
-                      color: isWeekend ? Colors.yellow[200] : null,
+      body: Row(
+        children: [
+          // Cột cố định (tên nhân viên và work site)
+          Column(
+            children: [
+              _buildCell('', isHeader: true),
+              // Header cột đầu tiên
+              ...widget.employees.asMap().entries.map((entry) {
+                final index = entry.key;
+                final employee = entry.value;
+                final isOdd = index % 2 != 0; // Kiểm tra hàng lẻ
+                return _buildCell(
+                  employee.name,
+                  isHeader: false,
+                  color: isOdd ? Colors.grey[200] : Colors.white,
+                );
+              }).toList(),
+              const SizedBox(height: 30),
+              // Khoảng cách giữa phần nhân viên và work site
+              ...widget.workSites.map((workSite) {
+                return _buildCell(workSite.name,
+                    isHeader: false, color: workSite.color);
+              }).toList(),
+            ],
+          ),
+          // Bảng cuộn ngang
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Column(
+                children: [
+                  // Header row (không chứa cột đầu tiên)
+                  Row(
+                    children: [
+                      ...List.generate(
+                        daysInMonth,
+                        (index) {
+                          final date = DateTime(2025, 1, index + 1);
+                          final dayOfWeek = DateFormat('EEEE').format(date);
+                          final isWeekend = date.weekday == DateTime.saturday ||
+                              date.weekday == DateTime.sunday;
+                          return _buildCell(
+                            '${index + 1}\n$dayOfWeek',
+                            isHeader: true,
+                            color: isWeekend ? Colors.yellow[200] : null,
+                          );
+                        },
+                      ),
+                      _buildCell('Tổng', isHeader: true),
+                    ],
+                  ),
+                  // Employee rows (không chứa cột đầu tiên)
+                  ...widget.employees.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final employee = entry.value;
+                    final isOdd = index % 2 != 0; // Kiểm tra hàng lẻ
+                    final rowColor = isOdd ? Colors.grey[200] : Colors.white;
+                    return Row(
+                      children: [
+                        ...List.generate(
+                          daysInMonth,
+                          (dayIndex) => _buildMultiLineCell(
+                            _getWorkSchedules(employee.id, dayIndex + 1),
+                          ),
+                        ).map(
+                            (cell) => Container(color: rowColor, child: cell)),
+                        _buildCell(
+                          _getEmployeeTotal(employee.id),
+                          isHeader: false,
+                          color: rowColor,
+                        ),
+                      ],
                     );
-                  },
-                ),
-                _buildCell('Tổng', isHeader: true),
-              ],
+                  }).toList(),
+                  const SizedBox(height: 30),
+                  // Khoảng cách giữa nhân viên và work site
+                  // WorkSite rows (không chứa cột đầu tiên)
+                  ...widget.workSites.map((workSite) {
+                    return Row(
+                      children: [
+                        ...List.generate(
+                          daysInMonth,
+                          (dayIndex) => _buildCell(
+                            _getWorkSiteDailyTotal(workSite.id, dayIndex + 1),
+                            isHeader: false,
+                          ),
+                        ),
+                        _buildCell(
+                          _getWorkSiteTotalById(workSite.id),
+                          isHeader: false,
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ],
+              ),
             ),
-            // Employee rows
-            ...widget.employees.asMap().entries.map((entry) {
-              const border = Border(
-                top: BorderSide(color: Colors.black, width: 0.5),
-                left: BorderSide(color: Colors.black, width: 0.5),
-                right: BorderSide(color: Colors.black, width: 0.5),
-                bottom: BorderSide(color: Colors.black, width: 0.5),
-              );
-              return Row(
-                children: [
-                  _buildCell(entry.value.name, isHeader: false, border: border),
-                  ...List.generate(
-                    daysInMonth,
-                    (dayIndex) => _buildMultiLineCell(
-                      _getWorkSchedules(entry.value.id, dayIndex + 1),
-                    ),
-                  ),
-                  _buildCell(_getEmployeeTotal(entry.value.id),
-                      isHeader: false, border: border),
-                ],
-              );
-            }).toList(),
-
-            const SizedBox(height: 30),
-            // WorkSite rows
-            ...widget.workSites.map((workSite) {
-              const border = Border(
-                top: BorderSide(color: Colors.transparent, width: 0),
-                right: BorderSide(color: Colors.transparent, width: 0.5),
-              );
-              return Row(
-                children: [
-                  _buildCell(workSite.name,
-                      isHeader: false, color: workSite.color, border: border),
-                  ...List.generate(
-                    daysInMonth,
-                    (dayIndex) => _buildCell(
-                      _getWorkSiteDailyTotal(workSite.id, dayIndex + 1),
-                      isHeader: false,
-                    ),
-                  ),
-                  _buildCell(_getWorkSiteTotalById(workSite.id),
-                      isHeader: false),
-                ],
-              );
-            }).toList(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -124,7 +151,6 @@ class _WorkScheduleTableState extends State<WorkScheduleTable> {
 
     return '$days day, $remainingHours hour';
   }
-
 
   // Tính tổng số lần làm việc tại WorkSite trong ngày
   String _getWorkSiteDailyTotal(int workSiteId, int day) {
@@ -150,14 +176,13 @@ class _WorkScheduleTableState extends State<WorkScheduleTable> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey),
-        color: Colors.white,
+        color: Colors.cyanAccent,
       ),
       width: 120,
+      height: 60, // Đặt chiều cao cố định cho toàn ô
       child: schedules.isEmpty
           ? _buildCell("", border: Border.all(color: Colors.transparent))
           : Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ..._buildShiftCells(schedules, Shift.first),
                 ..._buildShiftCells(schedules, Shift.second),
@@ -170,35 +195,40 @@ class _WorkScheduleTableState extends State<WorkScheduleTable> {
     final shiftSchedules =
         schedules.where((schedule) => schedule.shift == shift).toList();
 
+    // Nếu không có ca nào, trả về một hàng trống
     if (shiftSchedules.isEmpty) {
       return [
-        Container(
-          height: 30,
-          width: 120,
-          color: Colors.transparent,
-          alignment: Alignment.center,
-          child: const Text(
-            "",
-            style: TextStyle(fontSize: 12),
+        Expanded(
+          child: Container(
+            width: 120,
+            color: Colors.transparent,
+            alignment: Alignment.center,
+            child: const Text(
+              "", // Hiển thị ô trống
+              style: TextStyle(fontSize: 12),
+            ),
           ),
         ),
       ];
     }
 
+    // Nếu có lịch làm việc trong ca
     return shiftSchedules.map((schedule) {
       final workSite = widget.workSites.firstWhere(
-          (site) => site.id == schedule.workSiteId,
-          orElse: () => WorkSite(id: 0, name: '', color: Colors.transparent));
+        (site) => site.id == schedule.workSiteId,
+        orElse: () => WorkSite(id: 0, name: '', color: Colors.transparent),
+      );
 
-      return Container(
-        height: 30,
-        width: 120,
-        color: workSite.color,
-        alignment: Alignment.center,
-        child: Text(
-          workSite.name,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12),
+      return Expanded(
+        child: Container(
+          width: 120,
+          color: workSite.color, // Màu nền từ WorkSite
+          alignment: Alignment.center,
+          child: Text(
+            workSite.name, // Tên địa điểm làm việc
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
+          ),
         ),
       );
     }).toList();
