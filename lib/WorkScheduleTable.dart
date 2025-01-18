@@ -27,9 +27,6 @@ class _WorkScheduleTableState extends State<WorkScheduleTable> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Work Schedule Table'),
-      ),
       body: Row(
         children: [
           // Cột cố định (tên nhân viên và work site)

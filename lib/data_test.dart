@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'colors.dart';
 import 'model/employee.dart';
 import 'model/work_schedule.dart';
 import 'model/work_site.dart';
@@ -11,10 +12,10 @@ final List<Employee> employees = [
 ];
 
 final List<WorkSite> workSites = [
-  WorkSite(id: 1, name: 'Construct 1', color: Colors.green),
-  WorkSite(id: 2, name: 'Construct 2', color: Colors.blue),
-  WorkSite(id: 3, name: 'Construct 3', color: Colors.orange),
-  WorkSite(id: 4, name: 'Day Off', color: Colors.red),
+  WorkSite(id: 1, name: 'Construct 1', color: AppColors.lightGreen),
+  WorkSite(id: 2, name: 'Construct 2', color: AppColors.skyBlue),
+  WorkSite(id: 3, name: 'Construct 3', color: AppColors.orange),
+  WorkSite(id: 4, name: 'Day Off', color: AppColors.coralRed),
 ];
 
 final List<WorkSchedule> workSchedules = [
